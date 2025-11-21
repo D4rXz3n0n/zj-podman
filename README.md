@@ -1,6 +1,6 @@
 ## About
 
-This is an example [Zellij][zellij] plugin in Rust. It can be used as a template to start developing your own plugins.
+This is a zellij plugin allowing to see and launch podman container.
 
 More about Zellij plugins: [Zellij Documentation][docs]
 

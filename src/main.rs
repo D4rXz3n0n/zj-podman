@@ -1,4 +1,4 @@
-use zellij_tile::prelude::*;
+/*use zellij_tile::prelude::*;
 
 use std::collections::BTreeMap;
 
@@ -40,5 +40,187 @@ impl ZellijPlugin for State {
     }
     fn render(&mut self, rows: usize, cols: usize) {
         println!("Hi there! I have {rows} rows and {cols} columns");
+    }
+}
+*/
+
+use std::collections::BTreeMap;
+
+use owo_colors::OwoColorize;
+use zellij_tile::prelude::*;
+
+#[derive(Default)]
+struct State {
+    selected: usize,
+    containers: Vec<Vec<String>>,
+}
+
+impl State {
+    fn select_down(&mut self) {
+        self.selected = (self.selected + 1) % self.containers.len();
+    }
+
+    fn select_up(&mut self) {
+        if self.selected == 0 {
+            self.selected = self.containers.len() - 1;
+            return;
+        }
+        self.selected = self.selected - 1;
+    }
+
+    /*fn sort_containers(&mut self) {
+        self.containers.sort_by(|x, y| {
+            (x.tab_info.position)
+                .partial_cmp(&y.tab_info.position)
+                .unwrap()
+        });
+    }*/
+}
+
+register_plugin!(State);
+
+impl ZellijPlugin for State {
+    fn load(&mut self, _: BTreeMap<String, String>) {
+        request_permission(&[
+            PermissionType::RunCommands,
+            PermissionType::ReadApplicationState,
+            PermissionType::ChangeApplicationState,
+        ]);
+        subscribe(&[
+            EventType::Key,
+            EventType::TabUpdate,
+            EventType::PaneUpdate,
+            EventType::RunCommandResult,
+        ]);
+        let args = &["podman", "ps", "-a", "--format", "{{.Names}} {{.State}}"][..]; // slice
+        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+        run_command(args, envs);
+    }
+
+    fn update(&mut self, event: Event) -> bool {
+        let mut should_render = false;
+        let args = &["podman", "ps", "-a", "--format", "{{.Names}} {{.State}}"][..]; // slice
+        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+        let working_dir: Option<String> = None;
+        let timeout_ms: Option<u64> = None;
+        run_command(args, envs);
+        match event {
+            Event::RunCommandResult(_, _stdout, _, _) => {
+                if let stdout = _stdout {
+                    let output = String::from_utf8(stdout.to_vec()).unwrap_or_default();
+                    self.containers = output
+                        .lines()
+                        .map(|s| s.split_whitespace().map(|s| s.to_string()).collect())
+                        .collect();
+                }
+                should_render = true;
+            }
+
+            Event::PaneUpdate(pane_manifest) => {
+                should_render = true;
+            }
+            Event::Key(key) => match key.bare_key {
+                BareKey::Down | BareKey::Char('j') => {
+                    if self.containers.len() > 0 {
+                        self.select_down();
+                        should_render = true;
+                    }
+                }
+                BareKey::Up | BareKey::Char('k') => {
+                    if self.containers.len() > 0 {
+                        self.select_up();
+                        should_render = true;
+                    }
+                }
+                BareKey::Enter | BareKey::Char('l') => {
+                    let container = self.containers.get(self.selected);
+
+                    if let Some(container) = container {
+                        // TODO: This has a bug on macOS with hidden panes
+                        let args = &["podman", "start", &container[0]][..]; // slice
+                        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+                        run_command(args, envs);
+                        hide_self();
+                    }
+                }
+                BareKey::Enter | BareKey::Char('s') => {
+                    let container = self.containers.get(self.selected);
+
+                    if let Some(container) = container {
+                        // TODO: This has a bug on macOS with hidden panes
+                        let args = &["podman", "stop", &container[0]][..]; // slice
+                        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+                        run_command(args, envs);
+                        hide_self();
+                    }
+                }
+                BareKey::Char('e') => {
+                    let container = self.containers.get(self.selected);
+                    if let Some(container) = container {
+                        let args = &["podman", "exec", "-it", &container[0], "/bin/bash"][..];
+                        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+
+                        open_command_pane(
+                            CommandToRun {
+                                path: "podman".into(),
+                                cwd: None,
+                                args: vec![
+                                    "exec".to_owned(),
+                                    "-it".to_owned(),
+                                    container[0].clone(),
+                                    "/bin/bash".to_owned(),
+                                ],
+                            },
+                            envs,
+                        );
+                        //run_command(args,envs);
+                    }
+                }
+                BareKey::Char('q') => {
+                    hide_self();
+                }
+                _ => (),
+            },
+
+            _ => (),
+        };
+
+        should_render
+    }
+
+    fn render(&mut self, _rows: usize, _cols: usize) {
+        println!(
+            "{}",
+            self.containers
+                .iter()
+                .enumerate()
+                .map(|(idx, container)| {
+                    if let Some(name) = container.get(0)
+                        && let Some(state) = container.get(1)
+                    {
+                        if idx == self.selected {
+                            name.to_string().red().bold().to_string()
+                                + " "
+                                + &state.to_string().red().bold().to_string()
+                        } else {
+                            name.to_string() + " " + &state.to_string()
+                        }
+                    } else {
+                        "pipi".to_string()
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join("\n")
+        );
+        /*/ let mut text=String::new();
+        text.push_str("Docker containers:\n\n");
+        if self.containers.is_empty(){
+            text.push_str("No containers.\n")
+        }else{
+            for c in &self.containers{
+                text.push_str(&format!(" - {}\n",c));
+            }
+        }
+        println!("{}",text);*/
     }
 }

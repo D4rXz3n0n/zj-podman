@@ -1,8 +1,13 @@
 [package]
-name = "rust-plugin-example"
+name = "zj-podman"
 version = "0.1.0"
-authors = ["Aram Drevekenin <aram@poor.dev>"]
-edition = "2018"
+authors = ["D4rXz3n0n <paranoiac.android@gmail.com>"]
+edition = "2024"
 
 [dependencies]
-zellij-tile = "0.41.1"
+ansi_term = "0.12.1"
+chrono = "0.4.26"
+owo-colors = "3.5.0"
+serde = "1.0.175"
+serde_json = "1.0.103"
+zellij-tile = "0.42.2"

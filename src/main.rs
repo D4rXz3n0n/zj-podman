@@ -129,7 +129,6 @@ impl ZellijPlugin for State {
                         let args = &["podman", "start", &container[0]][..];
                         let envs: BTreeMap<String, String> = BTreeMap::new();
                         run_command(args, envs);
-                        hide_self();
                     }
                 }
                 BareKey::Char('s') => {
@@ -139,7 +138,6 @@ impl ZellijPlugin for State {
                         let args = &["podman", "stop", &container[0]][..];
                         let envs: BTreeMap<String, String> = BTreeMap::new();
                         run_command(args, envs);
-                        hide_self();
                     }
                 }
                 BareKey::Char('e') => {

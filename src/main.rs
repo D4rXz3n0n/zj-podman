@@ -67,14 +67,6 @@ impl State {
         }
         self.selected = self.selected - 1;
     }
-
-    /*fn sort_containers(&mut self) {
-        self.containers.sort_by(|x, y| {
-            (x.tab_info.position)
-                .partial_cmp(&y.tab_info.position)
-                .unwrap()
-        });
-    }*/
 }
 
 register_plugin!(State);
@@ -92,17 +84,15 @@ impl ZellijPlugin for State {
             EventType::PaneUpdate,
             EventType::RunCommandResult,
         ]);
-        let args = &["podman", "ps", "-a", "--format", "{{.Names}} {{.State}}"][..]; // slice
-        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+        let args = &["podman", "ps", "-a", "--format", "{{.Names}} {{.State}}"][..];
+        let envs: BTreeMap<String, String> = BTreeMap::new();
         run_command(args, envs);
     }
 
     fn update(&mut self, event: Event) -> bool {
         let mut should_render = false;
-        let args = &["podman", "ps", "-a", "--format", "{{.Names}} {{.State}}"][..]; // slice
-        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
-        let working_dir: Option<String> = None;
-        let timeout_ms: Option<u64> = None;
+        let args = &["podman", "ps", "-a", "--format", "{{.Names}} {{.State}}"][..];
+        let envs: BTreeMap<String, String> = BTreeMap::new();
         run_command(args, envs);
         match event {
             Event::RunCommandResult(_, _stdout, _, _) => {
@@ -136,20 +126,18 @@ impl ZellijPlugin for State {
                     let container = self.containers.get(self.selected);
 
                     if let Some(container) = container {
-                        // TODO: This has a bug on macOS with hidden panes
-                        let args = &["podman", "start", &container[0]][..]; // slice
-                        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+                        let args = &["podman", "start", &container[0]][..];
+                        let envs: BTreeMap<String, String> = BTreeMap::new();
                         run_command(args, envs);
                         hide_self();
                     }
                 }
-                BareKey::Enter | BareKey::Char('s') => {
+                BareKey::Char('s') => {
                     let container = self.containers.get(self.selected);
 
                     if let Some(container) = container {
-                        // TODO: This has a bug on macOS with hidden panes
-                        let args = &["podman", "stop", &container[0]][..]; // slice
-                        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+                        let args = &["podman", "stop", &container[0]][..];
+                        let envs: BTreeMap<String, String> = BTreeMap::new();
                         run_command(args, envs);
                         hide_self();
                     }
@@ -158,7 +146,7 @@ impl ZellijPlugin for State {
                     let container = self.containers.get(self.selected);
                     if let Some(container) = container {
                         let args = &["podman", "exec", "-it", &container[0], "/bin/bash"][..];
-                        let envs: BTreeMap<String, String> = BTreeMap::new(); // pas d'env
+                        let envs: BTreeMap<String, String> = BTreeMap::new();
 
                         open_command_pane(
                             CommandToRun {
@@ -173,7 +161,6 @@ impl ZellijPlugin for State {
                             },
                             envs,
                         );
-                        //run_command(args,envs);
                     }
                 }
                 BareKey::Char('q') => {
@@ -206,21 +193,11 @@ impl ZellijPlugin for State {
                             name.to_string() + " " + &state.to_string()
                         }
                     } else {
-                        "pipi".to_string()
+                        "There is no container to display".to_string()
                     }
                 })
                 .collect::<Vec<String>>()
                 .join("\n")
         );
-        /*/ let mut text=String::new();
-        text.push_str("Docker containers:\n\n");
-        if self.containers.is_empty(){
-            text.push_str("No containers.\n")
-        }else{
-            for c in &self.containers{
-                text.push_str(&format!(" - {}\n",c));
-            }
-        }
-        println!("{}",text);*/
     }
 }
